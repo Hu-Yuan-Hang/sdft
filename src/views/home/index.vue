@@ -1,4 +1,4 @@
-<template>
+  n<template>
   <div id="app">
     <div class="header">
       <h1>欢迎使用山东富通工厂管理系统</h1>
@@ -52,6 +52,11 @@ export default {
       matArrayA: [],
       matArrayB: [],
       door_state: true,
+      materialMain: null,
+      canvas: null,
+      dummy: null,
+      imgFloor: require('./images/floor.jpg'),
+      imgDoor:require('./images/door_right.png')
     };
   },
   methods: {
@@ -102,8 +107,9 @@ export default {
     ////////////////////////////////////////////////////////
     //创建地板
     createFloor() {
+      var that = this;
       let loader = new THREE.TextureLoader();
-      loader.load('./images/floor.jpg', function(texture) {
+      loader.load(this.imgFloor, function(texture) {
         console.log('找到我了!');
         texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
         texture.repeat.set(10, 10);
@@ -115,8 +121,7 @@ export default {
         let floor = new THREE.Mesh(floorGeometry, floorMaterial);
         floor.position.y = -0.5;
         floor.rotation.x = Math.PI / 2;
-        console.log('找到我了!');
-        this.scene.add(floor);
+        that.scene.add(floor);
       });
       //茶色：0x58ACFA   透明玻璃色：0XECF1F3
       let glass_material = new THREE.MeshBasicMaterial({
@@ -151,15 +156,12 @@ export default {
       this.matArrayB.push(new THREE.MeshPhongMaterial({ color: 0xafc0ca })); //左   0xafc0ca :灰色
       this.matArrayB.push(new THREE.MeshPhongMaterial({ color: 0xafc0ca })); //右
     },
-    createScreenMaterail(texture) {
+    createScreen(screentexture) {
       let matArrayC = []; //屏幕
-      matArrayC.push(new THREE.MeshPhongMaterial({ map: texture })); //前  0xafc0ca :灰色
-      matArrayC.push(new THREE.MeshPhongMaterial({ color: 0x333333 })); //后  0x9cb2d1：淡紫
-      matArrayC.push(new THREE.MeshPhongMaterial({ color: 0x333333 })); //上  0xd6e4ec： 偏白色
-      matArrayC.push(new THREE.MeshPhongMaterial({ color: 0x333333 })); //下
-      matArrayC.push(new THREE.MeshPhongMaterial({ color: 0x333333 })); //左   0xafc0ca :灰色
-      matArrayC.push(new THREE.MeshPhongMaterial({ color: 0x333333 })); //右
-      return matArrayC;
+      this.materialMain = new THREE.MeshPhongMaterial({ map: screentexture, }); //前  0xafc0ca :灰色
+      let material = new THREE.MeshPhongMaterial({ color: 0xedf0ce});//材质对象
+      matArrayC.push(this.materialMain,material,material,material,material,material);
+      this.createCubeWall(10, 300, 600, 1.5, matArrayC, 0, 220, -440);
     },
 
     //创建墙
@@ -218,26 +220,27 @@ export default {
       let door_cube = this.returnWallObject(100, 180, 10, 0, this.matArrayB, 0, 90, 455);
       this.createResultBsp(wall, door_cube, 1);
       //为墙面安装门,右门
-      // let loader = new THREE.TextureLoader();
-      // loader.load("./images/door_right.png", function (texture) {
-      //   let doorgeometry = new THREE.BoxGeometry(100, 180, 1);
-      //   let doormaterial = new THREE.MeshBasicMaterial({
-      //     map: texture,
-      //     // color : 0xdcfeee
-      //   });
-      //   doormaterial.opacity = 1;
-      //   doormaterial.transparent = true;
-      //   door = new THREE.Mesh(doorgeometry, doormaterial);
-      //   door.position.set(-50, 0, 0);
-      //   // var door1 = door.clone();
-      //   // door1.position.set(50, 0, 0);
-      //   // door1.visible = false;
-      //   let dummy = new THREE.Object3D();//仿制品
-      //   dummy.add(door);
-      //   // dummy.add(door1);
-      //   dummy.position.set(50, 90, 451);
-      //   this.scene.add(dummy);
-      // });
+      var that = this;
+      let loader = new THREE.TextureLoader();
+      loader.load(this.imgDoor, function (texture) {
+        let doorgeometry = new THREE.BoxGeometry(100, 180, 1);
+        let doormaterial = new THREE.MeshBasicMaterial({
+          map: texture,
+          // color : 0xdcfeee
+        });
+        doormaterial.opacity = 1;
+        doormaterial.transparent = true;
+        let door = new THREE.Mesh(doorgeometry, doormaterial);
+        door.position.set(-50, 0, 0);
+        // var door1 = door.clone();
+        // door1.position.set(50, 0, 0);
+        // door1.visible = false;
+        that.dummy = new THREE.Object3D();
+        that.dummy.add(door);
+        // dummy.add(door1);
+        that.dummy.position.set(50, 90, 451);
+        that.scene.add(that.dummy);
+      });
       // 房间A:隔墙1
       this.createCubeWall(10, 200, 300, 0, this.matArrayA, -201, 100, 300);
       //房间A:隔墙2  无门
@@ -250,24 +253,25 @@ export default {
       this.createCubeWall(350, 200, 10, 0, this.matArrayA, -471, 100, -10);
       this.createCubeWall(350, 200, 10, 0, this.matArrayA, 470, 100, -10);
     },
+    createCanvas() {
+      this.canvas = document.createElement('canvas');
+      this.canvas.width = 4000;
+      this.canvas.height = 2000;
+    },
     //生成纹理图片
     getTexture(time) {
-      let canvas = document.createElement("canvas");
-      canvas.width = 4000;
-      canvas.height = 2000;
-      let ctx = canvas.getContext("2d");
+      let ctx = this.canvas.getContext("2d");
+      ctx.clearRect(0, 0, 4000, 2000)
       ctx.fillStyle = "#FFFFFF";
       ctx.fillRect(20, 20, 3960, 1960);
       ctx.beginPath();
-      // ctx.translate(256, 64);
       ctx.fillStyle = "#FF3300";
       ctx.font = "300px 宋体"; //字体样式设置
       ctx.textBaseline = "middle"; //文本与fillText定义的纵坐标
       ctx.textAlign = "center"; //文本居中(以fillText定义的横坐标
       ctx.fillText(time, 2000, 200);
-      let texture = new THREE.CanvasTexture(canvas);
-      texture.needsUpdate = true;
-      return texture;
+      let screentexture = new THREE.CanvasTexture(this.canvas);
+      return screentexture;
     },
     //得到时间
     gettime() {
@@ -290,12 +294,7 @@ export default {
       s = checkTime(s);
       return y + "年" + m + "月" + d + "日" + " " + h + ":" + i + ":" + s;
     },
-    updata() {
-      let time = this.gettime();
-      let texture = this.getTexture(time);
-      let matArrayC = this.createScreenMaterail(texture);
-      this.createCubeWall(10, 300, 600, 1.5, matArrayC, 0, 220, -440);
-    },
+    
     //7.初始化OBJ对象
     initObject() {
       //墙纹理
@@ -308,10 +307,10 @@ export default {
 			case 13:
 				console.log(event.keyCode);
 				if (this.door_state) {
-					dummy.rotation.y += 0.5 * Math.PI;
+					this.dummy.rotation.y += 0.5 * Math.PI;
 					this.door_state = false;
 				} else {
-					dummy.rotation.y -= 0.5 * Math.PI;
+					this.dummy.rotation.y -= 0.5 * Math.PI;
 					this.door_state = true;
 				}
 				break;
@@ -328,22 +327,30 @@ export default {
       // initEvent();
       this.initControls();
       this.initLight();
+      this.createCanvas();
+      let time = this.gettime();
+      let screentexture = this.getTexture(time);
+      this.createScreen(screentexture)
       this.initObject();
       //监听键盘按键
       document.addEventListener("keydown", this.onkeyDown, false);
-      setInterval(this.updata, 1000);
+      
+    },
+    updata() {
+      let time = this.gettime();
+      let screentexture = this.getTexture(time);
+      this.materialMain.map.needsUpdate = true;
     },
     animate() {
 			requestAnimationFrame(this.animate);
-			this.renderer.render(this.scene, this.camera);
-			//TWEEN.update();
-			// update();
+      this.renderer.render(this.scene, this.camera);
+      
 		}
   },
   mounted() {
     this.init();
-    
     this.animate();
+    setInterval(this.updata, 1000);
   },
 };
 </script>
